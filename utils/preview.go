@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/digitalocean/godo"
@@ -14,10 +15,10 @@ import (
 // SanitizeSpecForPullRequestPreview modifies the given AppSpec to be suitable for a pull request preview.
 // This includes:
 // - Setting a unique app name.
-// - Unsetting any domains.
+// - Optionally unsetting any domains (unless preserveDomains is true).
 // - Unsetting any alerts.
 // - Setting the reference of all relevant components to point to the PRs ref.
-func SanitizeSpecForPullRequestPreview(spec *godo.AppSpec, ghCtx *gha.GitHubContext) error {
+func SanitizeSpecForPullRequestPreview(spec *godo.AppSpec, ghCtx *gha.GitHubContext, preserveDomains bool) error {
 	repoOwner, repo := ghCtx.Repo()
 	prRef, err := PRRefFromContext(ghCtx)
 	if err != nil {
@@ -28,7 +29,10 @@ func SanitizeSpecForPullRequestPreview(spec *godo.AppSpec, ghCtx *gha.GitHubCont
 	spec.Name = GenerateAppName(repoOwner, repo, prRef)
 
 	// Unset any domains as those might collide with production apps.
-	spec.Domains = nil
+	// UNLESS preserveDomains is explicitly true.
+	if !preserveDomains {
+		spec.Domains = nil
+	}
 
 	// Unset any alerts as those will be delivered wrongly anyway.
 	spec.Alerts = nil
@@ -48,6 +52,14 @@ func SanitizeSpecForPullRequestPreview(spec *godo.AppSpec, ghCtx *gha.GitHubCont
 	}); err != nil {
 		return fmt.Errorf("failed to sanitize buildable components: %w", err)
 	}
+
+	// Substitute domain tokens if domains are preserved
+	if preserveDomains && spec.Domains != nil {
+		if err := SubstituteDomainTokens(spec, ghCtx); err != nil {
+			return fmt.Errorf("failed to substitute domain tokens: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -74,6 +86,52 @@ func GenerateAppName(repoOwner, repo, ref string) string {
 	}
 
 	return baseName[:limit] + suffix
+}
+
+// SubstituteDomainTokens replaces tokens in domain specifications with PR-specific values.
+// Supports tokens like {BRANCH}, {PR_NUMBER}, {REPO}, {OWNER}
+func SubstituteDomainTokens(spec *godo.AppSpec, ghCtx *gha.GitHubContext) error {
+	if spec.Domains == nil {
+		return nil
+	}
+
+	repoOwner, repo := ghCtx.Repo()
+	prNumber := ""
+	if prFields, ok := ghCtx.Event["pull_request"].(map[string]any); ok {
+		if num, ok := prFields["number"].(float64); ok {
+			prNumber = fmt.Sprintf("%d", int(num))
+		}
+	}
+
+	// Sanitize branch name for DNS compliance
+	branchName := ghCtx.HeadRef
+	safeBranchName := strings.ToLower(branchName)
+	safeBranchName = strings.NewReplacer(
+		"/", "-",
+		"_", "-",
+		".", "-",
+	).Replace(safeBranchName)
+	// Remove any non-alphanumeric except hyphens
+	safeBranchName = regexp.MustCompile(`[^a-z0-9-]`).ReplaceAllString(safeBranchName, "")
+	// Trim to 63 chars (DNS label limit)
+	if len(safeBranchName) > 63 {
+		safeBranchName = safeBranchName[:63]
+	}
+	// Trim leading/trailing hyphens
+	safeBranchName = strings.Trim(safeBranchName, "-")
+
+	replacer := strings.NewReplacer(
+		"{BRANCH}", safeBranchName,
+		"{PR_NUMBER}", prNumber,
+		"{REPO}", repo,
+		"{OWNER}", repoOwner,
+	)
+
+	for i := range spec.Domains {
+		spec.Domains[i].Domain = replacer.Replace(spec.Domains[i].Domain)
+	}
+
+	return nil
 }
 
 // PRRefFromContext extracts the PR number from the given GitHub context.

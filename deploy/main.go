@@ -48,7 +48,8 @@ func main() {
 		}
 
 		// If this is a PR preview, we need to sanitize the spec.
-		if err := utils.SanitizeSpecForPullRequestPreview(spec, ghCtx); err != nil {
+		// Pass preservePRDomains flag to optionally keep custom domains.
+		if err := utils.SanitizeSpecForPullRequestPreview(spec, ghCtx, in.preservePRDomains); err != nil {
 			a.Fatalf("failed to sanitize spec for PR preview: %v", err)
 		}
 	}

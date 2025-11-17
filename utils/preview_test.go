@@ -64,7 +64,7 @@ func TestSanitizeSpecForPullRequestPreview(t *testing.T) {
 		},
 	}
 
-	err := SanitizeSpecForPullRequestPreview(spec, ghCtx)
+	err := SanitizeSpecForPullRequestPreview(spec, ghCtx, false)
 	require.NoError(t, err)
 
 	expected := &godo.AppSpec{

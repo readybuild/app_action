@@ -7,13 +7,14 @@ import (
 
 // inputs are the inputs for the action.
 type inputs struct {
-	token           string
-	appSpecLocation string
-	projectID       string
-	appName         string
-	printBuildLogs  bool
-	printDeployLogs bool
-	deployPRPreview bool
+	token             string
+	appSpecLocation   string
+	projectID         string
+	appName           string
+	printBuildLogs    bool
+	printDeployLogs   bool
+	deployPRPreview   bool
+	preservePRDomains bool
 }
 
 // getInputs gets the inputs for the action.
@@ -27,6 +28,7 @@ func getInputs(a *gha.Action) (inputs, error) {
 		utils.InputAsBool(a, "print_build_logs", true, &in.printBuildLogs),
 		utils.InputAsBool(a, "print_deploy_logs", true, &in.printDeployLogs),
 		utils.InputAsBool(a, "deploy_pr_preview", true, &in.deployPRPreview),
+		utils.InputAsBool(a, "preserve_pr_domains", true, &in.preservePRDomains),
 	} {
 		if err != nil {
 			return in, err

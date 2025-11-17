@@ -32,6 +32,10 @@ inputs:
     description: Deploy the app as a PR preview. The app name will be derived from the PR, the app spec will be mangled to exclude conflicting configuration like domains and alerts and all Github references to the current repository will be updated to point to the PR's branch.
     required: false
     default: 'false'
+  preserve_pr_domains:
+    description: When deploying PR previews, preserve custom domains from app spec instead of stripping them. Requires wildcard DNS setup.
+    required: false
+    default: 'false'
 
 outputs:
   app:
