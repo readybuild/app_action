@@ -68,7 +68,7 @@ func TestSanitizeSpecForPullRequestPreview(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := &godo.AppSpec{
-		Name: "bar-feature-branch", // Name got generated.
+		Name: "feature-branch", // Name got generated.
 		// Domains and alerts got removed.
 		Services: []*godo.AppServiceSpec{{
 			Name: "web",
@@ -126,31 +126,31 @@ func TestGenerateAppName(t *testing.T) {
 		repoOwner:  "foo",
 		repo:       "bar",
 		branchName: "feature-test-do-deploy2",
-		expected:   "bar-feature-test-do-deploy2",
+		expected:   "feature-test-do-deploy2",
 	}, {
 		name:       "branch with slashes",
 		repoOwner:  "foo",
 		repo:       "bar",
 		branchName: "feature/test",
-		expected:   "bar-feature-test",
+		expected:   "feature-test",
 	}, {
-		name:       "long repo owner",
-		repoOwner:  "thisisanextremelylongrepohostname",
+		name:       "branch with underscores and dots",
+		repoOwner:  "foo",
 		repo:       "bar",
-		branchName: "feature-branch",
-		expected:   "bar-feature-branch",
+		branchName: "feature_test.v2",
+		expected:   "feature-test-v2",
 	}, {
-		name:       "long repo",
+		name:       "long branch name",
 		repoOwner:  "foo",
-		repo:       "thisisanextremelylongreponame",
-		branchName: "feature-branch",
-		expected:   "thisisanextremelylongreponame-feature-branch",
+		repo:       "bar",
+		branchName: "this-is-an-extremely-long-branch-name-that-exceeds-the-limit",
+		expected:   "this-is-an-extremely-long-branch",
 	}, {
-		name:       "repo with hostname",
+		name:       "long branch with truncation at hyphen",
 		repoOwner:  "foo",
-		repo:       "my.domain.com",
-		branchName: "feature-branch",
-		expected:   "my-domain-com-feature-branch",
+		repo:       "bar",
+		branchName: "feature-with-a-very-long-name-",
+		expected:   "feature-with-a-very-long-name",
 	}}
 
 	for _, test := range tests {

@@ -57,9 +57,10 @@ func SanitizeSpecForPullRequestPreview(spec *godo.AppSpec, ghCtx *gha.GitHubCont
 	return nil
 }
 
-// GenerateAppName generates an app name based on the repo and branch name.
+// GenerateAppName generates an app name based on the branch name.
+// App names must be at most 32 characters.
 func GenerateAppName(repoOwner, repo, branchName string) string {
-	baseName := fmt.Sprintf("%s-%s", repo, branchName)
+	baseName := branchName
 	baseName = strings.ToLower(baseName)
 	baseName = strings.NewReplacer(
 		"/", "-",
@@ -70,6 +71,13 @@ func GenerateAppName(repoOwner, repo, branchName string) string {
 	baseName = regexp.MustCompile(`[^a-z0-9-]`).ReplaceAllString(baseName, "")
 	// Trim leading/trailing hyphens
 	baseName = strings.Trim(baseName, "-")
+
+	// Truncate to 32 characters max
+	if len(baseName) > 32 {
+		baseName = baseName[:32]
+		// Trim trailing hyphen if truncation created one
+		baseName = strings.TrimRight(baseName, "-")
+	}
 
 	return baseName
 }
