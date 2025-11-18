@@ -68,7 +68,7 @@ func TestSanitizeSpecForPullRequestPreview(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := &godo.AppSpec{
-		Name: "bar-3-merge", // Name got generated.
+		Name: "bar-feature-branch", // Name got generated.
 		// Domains and alerts got removed.
 		Services: []*godo.AppServiceSpec{{
 			Name: "web",
@@ -116,40 +116,46 @@ func TestSanitizeSpecForPullRequestPreview(t *testing.T) {
 
 func TestGenerateAppName(t *testing.T) {
 	tests := []struct {
-		name      string
-		repoOwner string
-		repo      string
-		ref       string
-		expected  string
+		name       string
+		repoOwner  string
+		repo       string
+		branchName string
+		expected   string
 	}{{
-		name:      "success",
-		repoOwner: "foo",
-		repo:      "bar",
-		ref:       "3/merge",
-		expected:  "bar-3-merge",
+		name:       "success",
+		repoOwner:  "foo",
+		repo:       "bar",
+		branchName: "feature-test-do-deploy2",
+		expected:   "bar-feature-test-do-deploy2",
 	}, {
-		name:      "long repo owner",
-		repoOwner: "thisisanextremelylongrepohostname",
-		repo:      "bar",
-		ref:       "3/merge",
-		expected:  "bar-3-merge",
+		name:       "branch with slashes",
+		repoOwner:  "foo",
+		repo:       "bar",
+		branchName: "feature/test",
+		expected:   "bar-feature-test",
 	}, {
-		name:      "long repo",
-		repoOwner: "foo",
-		repo:      "thisisanextremelylongreponame",
-		ref:       "3/merge",
-		expected:  "thisisanextremelylongreponame-3-merge",
+		name:       "long repo owner",
+		repoOwner:  "thisisanextremelylongrepohostname",
+		repo:       "bar",
+		branchName: "feature-branch",
+		expected:   "bar-feature-branch",
 	}, {
-		name:      "repo with hostname",
-		repoOwner: "foo",
-		repo:      "my.domain.com",
-		ref:       "3/merge",
-		expected:  "my-domain-com-3-merge",
+		name:       "long repo",
+		repoOwner:  "foo",
+		repo:       "thisisanextremelylongreponame",
+		branchName: "feature-branch",
+		expected:   "thisisanextremelylongreponame-feature-branch",
+	}, {
+		name:       "repo with hostname",
+		repoOwner:  "foo",
+		repo:       "my.domain.com",
+		branchName: "feature-branch",
+		expected:   "my-domain-com-feature-branch",
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := GenerateAppName(test.repoOwner, test.repo, test.ref)
+			got := GenerateAppName(test.repoOwner, test.repo, test.branchName)
 			require.Equal(t, test.expected, got)
 		})
 	}

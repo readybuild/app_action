@@ -18,13 +18,9 @@ import (
 // - Setting the reference of all relevant components to point to the PRs ref.
 func SanitizeSpecForPullRequestPreview(spec *godo.AppSpec, ghCtx *gha.GitHubContext, preserveDomains bool) error {
 	repoOwner, repo := ghCtx.Repo()
-	prRef, err := PRRefFromContext(ghCtx)
-	if err != nil {
-		return fmt.Errorf("failed to get PR number: %w", err)
-	}
 
 	// Override app name to something that identifies this PR.
-	spec.Name = GenerateAppName(repoOwner, repo, prRef)
+	spec.Name = GenerateAppName(repoOwner, repo, ghCtx.HeadRef)
 
 	// Unset any domains as those might collide with production apps.
 	// UNLESS preserveDomains is explicitly true.
@@ -61,16 +57,19 @@ func SanitizeSpecForPullRequestPreview(spec *godo.AppSpec, ghCtx *gha.GitHubCont
 	return nil
 }
 
-// GenerateAppName generates an app name based on the repo and ref.
-func GenerateAppName(repoOwner, repo, ref string) string {
-	baseName := fmt.Sprintf("%s-%s", repo, ref)
+// GenerateAppName generates an app name based on the repo and branch name.
+func GenerateAppName(repoOwner, repo, branchName string) string {
+	baseName := fmt.Sprintf("%s-%s", repo, branchName)
 	baseName = strings.ToLower(baseName)
 	baseName = strings.NewReplacer(
-		"/", "-", // Replace slashes.
-		":", "", // Colons are illegal.
-		"_", "-", // Underscores are illegal.
-		".", "-", // Dots are illegal.
+		"/", "-",
+		"_", "-",
+		".", "-",
 	).Replace(baseName)
+	// Remove any non-alphanumeric characters except hyphens
+	baseName = regexp.MustCompile(`[^a-z0-9-]`).ReplaceAllString(baseName, "")
+	// Trim leading/trailing hyphens
+	baseName = strings.Trim(baseName, "-")
 
 	return baseName
 }
