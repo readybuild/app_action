@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"regexp"
@@ -63,9 +61,9 @@ func SanitizeSpecForPullRequestPreview(spec *godo.AppSpec, ghCtx *gha.GitHubCont
 	return nil
 }
 
-// GenerateAppName generates a unique app name based on the repoOwner, repo, and ref.
+// GenerateAppName generates an app name based on the repo and ref.
 func GenerateAppName(repoOwner, repo, ref string) string {
-	baseName := fmt.Sprintf("%s-%s-%s", repoOwner, repo, ref)
+	baseName := fmt.Sprintf("%s-%s", repo, ref)
 	baseName = strings.ToLower(baseName)
 	baseName = strings.NewReplacer(
 		"/", "-", // Replace slashes.
@@ -74,18 +72,7 @@ func GenerateAppName(repoOwner, repo, ref string) string {
 		".", "-", // Dots are illegal.
 	).Replace(baseName)
 
-	// Generate a hash from the unique enumeration of repoOwner, repo, and ref.
-	hasher := sha256.New()
-	hasher.Write([]byte(baseName))
-	suffix := "-" + hex.EncodeToString(hasher.Sum(nil))[:8]
-
-	// App names must be at most 32 characters.
-	limit := 32 - len(suffix)
-	if len(baseName) < limit {
-		limit = len(baseName)
-	}
-
-	return baseName[:limit] + suffix
+	return baseName
 }
 
 // SubstituteDomainTokens replaces tokens in domain specifications with PR-specific values.

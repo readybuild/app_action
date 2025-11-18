@@ -68,7 +68,7 @@ func TestSanitizeSpecForPullRequestPreview(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := &godo.AppSpec{
-		Name: "foo-bar-3-merge-adb46530", // Name got generated.
+		Name: "bar-3-merge", // Name got generated.
 		// Domains and alerts got removed.
 		Services: []*godo.AppServiceSpec{{
 			Name: "web",
@@ -126,25 +126,25 @@ func TestGenerateAppName(t *testing.T) {
 		repoOwner: "foo",
 		repo:      "bar",
 		ref:       "3/merge",
-		expected:  "foo-bar-3-merge-adb46530",
+		expected:  "bar-3-merge",
 	}, {
 		name:      "long repo owner",
 		repoOwner: "thisisanextremelylongrepohostname",
 		repo:      "bar",
 		ref:       "3/merge",
-		expected:  "thisisanextremelylongre-92da974b",
+		expected:  "bar-3-merge",
 	}, {
 		name:      "long repo",
 		repoOwner: "foo",
 		repo:      "thisisanextremelylongreponame",
 		ref:       "3/merge",
-		expected:  "foo-thisisanextremelylo-67dbc40d",
+		expected:  "thisisanextremelylongreponame-3-merge",
 	}, {
 		name:      "repo with hostname",
 		repoOwner: "foo",
 		repo:      "my.domain.com",
 		ref:       "3/merge",
-		expected:  "foo-my-domain-com-3-mer-b5e0d686",
+		expected:  "my-domain-com-3-merge",
 	}}
 
 	for _, test := range tests {
